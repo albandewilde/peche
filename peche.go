@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	dgo "github.com/bwmarrin/discordgo"
@@ -15,12 +16,27 @@ const (
 	DSTDIR = "/img_dst/"
 )
 
-var TKN string // Discord bot token
+var (
+	TKN     string // Discord bot token
+	MINTIME int64  // Minimum time between two sending (in seconde)
+	MAXTIME int64  // Maximum time between two sending (in seconde)
+)
 
 func init() {
 	TKN = os.Getenv("tkn")
 	if TKN == "" {
 		log.Fatal("No discord token found in environment variable `tkn`.")
+	}
+
+	var err error
+	MINTIME, err = strconv.ParseInt(os.Getenv("min_time"), 10, 64)
+	MAXTIME, err = strconv.ParseInt(os.Getenv("max_time"), 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if MINTIME > MAXTIME {
+		log.Fatal("`min_time` must be lower or equal to `max_time`")
 	}
 }
 
@@ -30,6 +46,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Start the sending
+	go sending(b, SRCDIR, DSTDIR, MINTIME, MAXTIME)
+
+	// Add no handelers
 
 	// Open a websocket connection to Discord and begin listening.
 	err = b.Open()
