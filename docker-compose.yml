@@ -5,5 +5,5 @@ services:
         build: "."
         env_file: .env
         volumes:
-            - "${src}:/src/"
-            - "${dst}:/dst/"
+            - "${src}:/img_src/"
+            - "${dst}:/img_dst/"
