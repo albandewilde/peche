@@ -9,7 +9,7 @@ import (
 	dgo "github.com/bwmarrin/discordgo"
 )
 
-func sending(b *dgo.Session, src, dst string, min, max int64) {
+func sending(b *dgo.Session, src, dst string, min, max int64, channelsIDs []string) {
 	for {
 		// Change the waiting time
 		waitSec := int64(rand.Intn(int(max-min))) + min
@@ -24,7 +24,7 @@ func sending(b *dgo.Session, src, dst string, min, max int64) {
 				src,
 				dst,
 				b,
-				"719171339788877857",
+				channelsIDs,
 			)
 		}
 	}

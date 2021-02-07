@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
+	"time"
 
 	dgo "github.com/bwmarrin/discordgo"
 )
@@ -17,9 +19,10 @@ const (
 )
 
 var (
-	TKN     string // Discord bot token
-	MINTIME int64  // Minimum time between two sending (in seconde)
-	MAXTIME int64  // Maximum time between two sending (in seconde)
+	TKN         string   // Discord bot token
+	MINTIME     int64    // Minimum time between two sending (in seconde)
+	MAXTIME     int64    // Maximum time between two sending (in seconde)
+	channelsIDs []string // Channel id to send pictures
 )
 
 func init() {
@@ -47,10 +50,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Start the sending
-	go sending(b, SRCDIR, DSTDIR, MINTIME, MAXTIME)
-
-	// Add no handelers
+	// Add no handers
 
 	// Open a websocket connection to Discord and begin listening.
 	err = b.Open()
@@ -58,12 +58,48 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Connecting...")
+
+	// Wait for connecting
+	<-time.After(time.Second * 5)
+
 	fmt.Println("I'm logged in ! (Press CTRL-C to exit.)")
+
+	// Get channels list
+	channelsNames := readChannelsName()
+	channelsIDs := channelsNameToID(b, channelsNames)
+
+	// Start the sending
+	go sending(b, SRCDIR, DSTDIR, MINTIME, MAXTIME, channelsIDs)
+
+	// Wait here until CTRL-C or other term signal is received.
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
 
 	// Cleanly close down the Discord session.
 	b.Close()
+}
+
+func readChannelsName() []string {
+	return strings.Split(os.Getenv("channels"), ",")
+
+}
+
+func channelsNameToID(b *dgo.Session, chs []string) []string {
+	guilds := b.State.Guilds
+	ids := make([]string, 0)
+
+	// Find channel id with their name
+	for _, g := range guilds { // Loop on each guild
+		for _, c := range g.Channels { // Loop on each channel of the guild
+			for _, channelName := range chs { // Loop on each channel name we have
+				if c.Name == channelName && !include(ids, c.ID) {
+					ids = append(ids, c.ID)
+				}
+			}
+		}
+	}
+
+	return ids
 }

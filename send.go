@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,7 +10,7 @@ import (
 	dgo "github.com/bwmarrin/discordgo"
 )
 
-func sendAndMoveFile(src, dst string, s *dgo.Session, channelID string) error {
+func sendAndMoveFile(src, dst string, s *dgo.Session, channelsIDs []string) error {
 	// Read files in source directory
 	files, err := ioutil.ReadDir(src)
 	if err != nil {
@@ -27,16 +28,19 @@ func sendAndMoveFile(src, dst string, s *dgo.Session, channelID string) error {
 		return err
 	}
 
-	// Open the file for reading
-	f, err := os.Open(src + file.Name())
-	defer f.Close()
-	if err != nil {
-		return err
-	}
-	// Send that file
-	_, err = s.ChannelFileSend(channelID, f.Name(), f)
-	if err != nil {
-		return err
+	// Send that file on all channels we need to
+	for _, chanID := range channelsIDs {
+		// Open the file for reading
+		f, err := os.Open(src + file.Name())
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+
+		_, err = s.ChannelFileSend(chanID, file.Name(), f)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 	// Move the file to the destination directory
