@@ -1,7 +1,9 @@
-FROM golang as builder
+FROM golang:1.15 as builder
 
 WORKDIR /usr/src/peche
 COPY . .
+
+RUN go mod tidy
 
 RUN CGO_ENABLED=0 go build -o /bin/peche
 
